@@ -36,8 +36,8 @@ yarn-error.log*
 .env.*.local
 !.env.example
 
-# drizzle
-/drizzle/migrations/meta
+# drizzle: the migrations folder (including meta/_journal.json) is committed on
+# purpose — the runtime migrator and drizzle-kit both require it.
 
 # vercel
 .vercel
