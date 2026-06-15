@@ -29,7 +29,7 @@ describe("GET /api/health/db", () => {
     expect(response.status).toBe(200);
     expect(data.status).toBe("healthy");
     expect(data.service).toBe("database");
-    expect(data.provider).toBe("supabase");
+    expect(data.provider).toBe("railway-postgres");
   });
 
   it("returns unhealthy when database fails", async () => {

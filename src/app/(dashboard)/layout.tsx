@@ -1,8 +1,9 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/core/supabase/server";
+import { auth } from "@/core/auth/server";
 import { signOut } from "@/features/auth/actions";
 
 interface DashboardLayoutProps {
@@ -10,12 +11,9 @@ interface DashboardLayoutProps {
 }
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth.api.getSession({ headers: await headers() });
 
-  if (!user) {
+  if (!session) {
     redirect("/login");
   }
 
@@ -27,15 +25,12 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
             <a href="/dashboard" className="font-semibold">
               Dashboard
             </a>
-            <a
-              href="/dashboard/projects"
-              className="text-muted-foreground hover:text-foreground"
-            >
+            <a href="/dashboard/projects" className="text-muted-foreground hover:text-foreground">
               Projects
             </a>
           </nav>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{user.email}</span>
+            <span className="text-sm text-muted-foreground">{session.user.email}</span>
             <form action={signOut}>
               <Button variant="outline" size="sm" type="submit">
                 Sign out

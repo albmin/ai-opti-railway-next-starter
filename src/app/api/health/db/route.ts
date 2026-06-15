@@ -21,7 +21,7 @@ export async function GET() {
     return NextResponse.json({
       status: "healthy",
       service: "database",
-      provider: "supabase",
+      provider: "railway-postgres",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

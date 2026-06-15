@@ -1,40 +1,19 @@
 "use client";
 
-import type { User } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
-
-import { createClient } from "@/core/supabase/client";
+import { useSession } from "@/core/auth/client";
 
 /**
- * Hook to get and subscribe to the current user in client components.
- * Returns null while loading, undefined if not authenticated, or the User object.
+ * Hook to read the current user in client components.
+ * Returns `null` while loading, `undefined` if not authenticated, or the user.
  */
 export function useUser() {
-  const [user, setUser] = useState<User | null | undefined>(null);
+  const { data, isPending } = useSession();
 
-  useEffect(() => {
-    const supabase = createClient();
-
-    // Get initial user
-    supabase.auth.getUser().then(({ data: { user: currentUser } }) => {
-      setUser(currentUser ?? undefined);
-    });
-
-    // Subscribe to auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? undefined);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  const user = isPending ? null : (data?.user ?? undefined);
 
   return {
     user,
-    isLoading: user === null,
-    isAuthenticated: user !== null && user !== undefined,
+    isLoading: isPending,
+    isAuthenticated: !isPending && Boolean(data?.user),
   };
 }

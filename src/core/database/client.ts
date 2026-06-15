@@ -7,10 +7,15 @@ import * as schema from "./schema";
 
 /**
  * PostgreSQL connection for Drizzle ORM.
- * Uses connection pooling URL (port 6543) for serverless environments.
+ *
+ * Tuned for a long-lived container (Railway) rather than serverless: one process
+ * owns a small connection pool, so prepared statements stay enabled and we connect
+ * directly over Railway's private network (no transaction pooler required).
  */
 const client = postgres(env.DATABASE_URL, {
-  prepare: false, // Required for Supabase Transaction pooler
+  max: 10, // connections per container — mind the total when running replicas
+  idle_timeout: 20, // seconds before an idle connection is released
+  connect_timeout: 10, // seconds to wait when opening a new connection
 });
 
 /**

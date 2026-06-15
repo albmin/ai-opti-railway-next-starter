@@ -35,8 +35,9 @@ export async function GET() {
     allHealthy = false;
   }
 
-  // Check auth configuration
-  if (env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  // Check auth configuration. Read process.env directly so a missing value
+  // reports "not_ready" instead of throwing from the validated env getter.
+  if (process.env["BETTER_AUTH_SECRET"]) {
     checks.auth = "configured";
   } else {
     logger.warn("health.ready_auth_config_missing");

@@ -1,19 +1,17 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { createClient } from "@/core/supabase/server";
+import { auth } from "@/core/auth/server";
 
 interface AuthLayoutProps {
   children: ReactNode;
 }
 
 export default async function AuthLayout({ children }: AuthLayoutProps) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth.api.getSession({ headers: await headers() });
 
-  if (user) {
+  if (session) {
     redirect("/dashboard");
   }
 

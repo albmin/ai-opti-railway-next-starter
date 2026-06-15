@@ -1,12 +1,12 @@
+import { headers } from "next/headers";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createClient } from "@/core/supabase/server";
+import { auth } from "@/core/auth/server";
 import { getProjectCount } from "@/features/projects";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth.api.getSession({ headers: await headers() });
+  const user = session?.user;
 
   const projectCount = user ? await getProjectCount(user.id) : 0;
 
@@ -34,11 +34,9 @@ export default async function DashboardPage() {
                 <dd className="font-mono text-sm">{user?.id}</dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Last Sign In</dt>
+                <dt className="text-sm text-muted-foreground">Member Since</dt>
                 <dd className="text-sm">
-                  {user?.last_sign_in_at
-                    ? new Date(user.last_sign_in_at).toLocaleDateString()
-                    : "N/A"}
+                  {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
                 </dd>
               </div>
             </dl>

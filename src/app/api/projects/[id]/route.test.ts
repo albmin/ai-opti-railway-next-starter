@@ -3,9 +3,11 @@ import { NextRequest } from "next/server";
 
 import type { Project } from "@/features/projects";
 
-// Mock user type
-type MockUser = { id: string; email: string } | null;
-const mockUser: MockUser = { id: "user-123", email: "test@example.com" };
+type SessionResult = {
+  user: { id: string; email: string };
+  session: Record<string, unknown>;
+} | null;
+const mockUser = { id: "user-123", email: "test@example.com" };
 const mockProject: Project = {
   id: "project-123",
   name: "Test Project",
@@ -17,17 +19,12 @@ const mockProject: Project = {
   updatedAt: new Date("2024-01-01"),
 };
 
-// Mock Supabase auth
-const mockGetUser = mock<() => Promise<{ data: { user: MockUser }; error: null }>>(() =>
-  Promise.resolve({ data: { user: mockUser }, error: null }),
+// Mock Better Auth session
+const mockGetSession = mock<() => Promise<SessionResult>>(() =>
+  Promise.resolve({ user: mockUser, session: {} }),
 );
-mock.module("@/core/supabase/server", () => ({
-  createClient: () =>
-    Promise.resolve({
-      auth: {
-        getUser: mockGetUser,
-      },
-    }),
+mock.module("@/core/auth/server", () => ({
+  auth: { api: { getSession: mockGetSession } },
 }));
 
 // Mock repository (the database layer)
@@ -57,7 +54,7 @@ const createParams = (id: string) => ({ params: Promise.resolve({ id }) });
 
 describe("GET /api/projects/[id]", () => {
   beforeEach(() => {
-    mockGetUser.mockClear();
+    mockGetSession.mockClear();
     mockFindById.mockClear();
   });
 
@@ -71,7 +68,7 @@ describe("GET /api/projects/[id]", () => {
   });
 
   it("returns public project for unauthenticated user", async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    mockGetSession.mockResolvedValueOnce(null);
     mockFindById.mockResolvedValueOnce({ ...mockProject, isPublic: true });
 
     const request = new NextRequest("http://localhost:3000/api/projects/project-123");
@@ -92,10 +89,9 @@ describe("GET /api/projects/[id]", () => {
   });
 
   it("returns 403 for private project accessed by non-owner", async () => {
-    // Different user trying to access private project
-    mockGetUser.mockResolvedValueOnce({
-      data: { user: { id: "other-user", email: "other@example.com" } },
-      error: null,
+    mockGetSession.mockResolvedValueOnce({
+      user: { id: "other-user", email: "other@example.com" },
+      session: {},
     });
 
     const request = new NextRequest("http://localhost:3000/api/projects/project-123");
@@ -109,7 +105,7 @@ describe("GET /api/projects/[id]", () => {
 
 describe("PATCH /api/projects/[id]", () => {
   beforeEach(() => {
-    mockGetUser.mockClear();
+    mockGetSession.mockClear();
     mockFindById.mockClear();
     mockFindByIdAndOwner.mockClear();
     mockUpdate.mockClear();
@@ -129,7 +125,7 @@ describe("PATCH /api/projects/[id]", () => {
   });
 
   it("returns 401 for unauthenticated user", async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    mockGetSession.mockResolvedValueOnce(null);
 
     const request = new NextRequest("http://localhost:3000/api/projects/project-123", {
       method: "PATCH",
@@ -144,9 +140,9 @@ describe("PATCH /api/projects/[id]", () => {
   });
 
   it("returns 403 for non-owner", async () => {
-    mockGetUser.mockResolvedValueOnce({
-      data: { user: { id: "other-user", email: "other@example.com" } },
-      error: null,
+    mockGetSession.mockResolvedValueOnce({
+      user: { id: "other-user", email: "other@example.com" },
+      session: {},
     });
     mockFindByIdAndOwner.mockResolvedValueOnce(undefined); // Not owner
     mockFindById.mockResolvedValueOnce(mockProject); // Project exists
@@ -179,7 +175,7 @@ describe("PATCH /api/projects/[id]", () => {
 
 describe("DELETE /api/projects/[id]", () => {
   beforeEach(() => {
-    mockGetUser.mockClear();
+    mockGetSession.mockClear();
     mockFindById.mockClear();
     mockFindByIdAndOwner.mockClear();
     mockDeleteById.mockClear();
@@ -196,7 +192,7 @@ describe("DELETE /api/projects/[id]", () => {
   });
 
   it("returns 401 for unauthenticated user", async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    mockGetSession.mockResolvedValueOnce(null);
 
     const request = new NextRequest("http://localhost:3000/api/projects/project-123", {
       method: "DELETE",
@@ -223,9 +219,9 @@ describe("DELETE /api/projects/[id]", () => {
   });
 
   it("returns 403 for non-owner", async () => {
-    mockGetUser.mockResolvedValueOnce({
-      data: { user: { id: "other-user", email: "other@example.com" } },
-      error: null,
+    mockGetSession.mockResolvedValueOnce({
+      user: { id: "other-user", email: "other@example.com" },
+      session: {},
     });
     mockFindByIdAndOwner.mockResolvedValueOnce(undefined); // Not owner
     mockFindById.mockResolvedValueOnce(mockProject); // Project exists

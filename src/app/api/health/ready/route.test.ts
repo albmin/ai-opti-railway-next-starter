@@ -1,5 +1,8 @@
 import { describe, expect, it, mock } from "bun:test";
 
+// The readiness route reads BETTER_AUTH_SECRET directly from process.env.
+process.env["BETTER_AUTH_SECRET"] = "test-secret";
+
 // Mock database client
 const mockExecute = mock(() => Promise.resolve([{ "?column?": 1 }]));
 
@@ -9,12 +12,10 @@ mock.module("@/core/database/client", () => ({
   },
 }));
 
-// Mock env
+// Mock env (only NODE_ENV is read from the validated env object)
 mock.module("@/core/config/env", () => ({
   env: {
     NODE_ENV: "test",
-    NEXT_PUBLIC_SUPABASE_URL: "https://test.supabase.co",
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-key",
   },
 }));
 

@@ -15,24 +15,6 @@ const initialState: RegisterState = {};
 export default function RegisterPage() {
   const [state, formAction, isPending] = useActionState(register, initialState);
 
-  if (state.success) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Check your email</CardTitle>
-          <CardDescription>{state.message}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/login">
-            <Button variant="outline" className="w-full">
-              Back to login
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card>
       <CardHeader>

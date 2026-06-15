@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { handleApiError, unauthorizedResponse } from "@/core/api/errors";
+import { auth } from "@/core/auth/server";
 import { getLogger } from "@/core/logging";
-import { createClient } from "@/core/supabase/server";
 import { deleteProject, getProject, UpdateProjectSchema, updateProject } from "@/features/projects";
 
 const logger = getLogger("api.projects");
@@ -16,17 +16,15 @@ interface RouteParams {
  * Get a single project by ID.
  * Returns public projects to anyone, private projects only to owner.
  */
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const session = await auth.api.getSession({ headers: request.headers });
+    const userId = session?.user.id ?? null;
 
-    logger.info({ projectId: id, userId: user?.id ?? null }, "project.get_started");
+    logger.info({ projectId: id, userId }, "project.get_started");
 
-    const project = await getProject(id, user?.id ?? null);
+    const project = await getProject(id, userId);
 
     logger.info({ projectId: id }, "project.get_completed");
 
@@ -43,14 +41,11 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session) {
       return unauthorizedResponse();
     }
+    const { user } = session;
 
     const body = await request.json();
     const input = UpdateProjectSchema.parse(body);
@@ -71,17 +66,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
  * DELETE /api/projects/[id]
  * Delete a project. Only the owner can delete.
  */
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session) {
       return unauthorizedResponse();
     }
+    const { user } = session;
 
     logger.info({ projectId: id, userId: user.id }, "project.delete_started");
 

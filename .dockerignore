@@ -1,0 +1,23 @@
+# Dependencies & build artifacts (reinstalled/rebuilt inside the image)
+node_modules
+.next
+out
+coverage
+
+# Local env & secrets (provided by Railway at runtime)
+.env
+.env.*
+
+# Tooling / VCS / editor noise not needed in the image
+.git
+.gitignore
+.claude
+.vscode
+.DS_Store
+*.log
+
+# Docs & container metadata
+*.md
+docs
+Dockerfile
+.dockerignore

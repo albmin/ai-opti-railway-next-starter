@@ -58,22 +58,6 @@ describe("RegisterPage", () => {
     expect(screen.getByText("User already exists")).toBeInTheDocument();
   });
 
-  it("shows success message when email confirmation required", async () => {
-    mockUseActionState.mockImplementationOnce(() => {
-      return [
-        { success: true, message: "Check your email for a confirmation link." },
-        mock(() => {}),
-        false,
-      ];
-    });
-
-    render(<RegisterPage />);
-
-    expect(screen.getByText("Check your email")).toBeInTheDocument();
-    expect(screen.getByText("Check your email for a confirmation link.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /back to login/i })).toBeInTheDocument();
-  });
-
   it("shows loading state when pending", async () => {
     mockUseActionState.mockImplementationOnce(() => {
       return [{}, mock(() => {}), true]; // isPending = true

@@ -1,6 +1,6 @@
 # Next.js AI Coding Starter
 
-Production-ready Next.js SaaS starter optimized for AI-assisted development with Bun, Supabase, and strict TypeScript.
+Production-ready Next.js SaaS starter optimized for AI-assisted development with Bun, Better Auth, Railway, and strict TypeScript.
 
 ## Stack
 
@@ -11,11 +11,13 @@ Production-ready Next.js SaaS starter optimized for AI-assisted development with
 | Linting | Biome | 10-25x faster feedback loop |
 | Type Safety | TS strict | Unambiguous errors, types as docs |
 | Database | Drizzle ORM | Can't write invalid queries |
-| Auth | Supabase Auth | Clear errors, 50K MAU free |
+| Auth | Better Auth | Self-hosted, typed, sessions in Postgres |
 | Validation | Zod | Structured errors, self-documenting |
 | Logging | Pino | Machine-readable debugging context |
 | Testing | Bun test | 10x faster than Jest |
 | UI | shadcn/ui | Agent can read/modify components |
+| Hosting | Railway | Container deploy + managed Postgres |
+| Build | Docker | Reproducible multi-stage standalone image |
 
 ## Quick Start
 
@@ -25,24 +27,28 @@ bun install
 
 # Set up environment
 cp .env.example .env
-# Edit .env with your Supabase credentials
+# Edit .env: DATABASE_URL, BETTER_AUTH_SECRET (openssl rand -base64 32), BETTER_AUTH_URL
 
-# Push database schema
-bun run db:push
+# Apply database migrations (Better Auth + app tables)
+bun run db:migrate:deploy
 
 # Start development server
 bun run dev
 ```
 
+Need a local Postgres? `docker run -d --name pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:17`
+
 ## Commands
 
 ```bash
-bun run dev          # Start development server
-bun run build        # Production build
-bun run lint         # Check for lint/format errors
-bun run lint:fix     # Auto-fix lint/format issues
-bun test             # Run tests with coverage
-bun run db:studio    # Open Drizzle Studio GUI
+bun run dev               # Start development server
+bun run build             # Production build
+bun run lint              # Check for lint/format errors
+bun run lint:fix          # Auto-fix lint/format issues
+bun test                  # Run tests with coverage
+bun run db:generate       # Generate migrations from schema changes
+bun run db:migrate:deploy # Apply migrations locally (Railway runs scripts/migrate.ts on deploy)
+bun run db:studio         # Open Drizzle Studio GUI
 ```
 
 ## Architecture
@@ -52,61 +58,59 @@ src/
 ├── app/                    # Next.js App Router
 │   ├── (auth)/            # Auth pages (login, register)
 │   ├── (dashboard)/       # Protected pages
-│   └── api/               # API routes
+│   └── api/
+│       ├── auth/[...all]/ # Better Auth catch-all handler
+│       ├── health/        # Liveness / readiness / db checks
+│       └── projects/      # Example REST API
 ├── core/                   # Shared infrastructure
-│   ├── config/            # Environment validation
-│   ├── database/          # Drizzle client & schema
-│   ├── logging/           # Pino structured logging
-│   └── supabase/          # Supabase clients
+│   ├── auth/              # Better Auth server + browser client
+│   ├── config/            # Environment validation (lazy)
+│   ├── database/          # Drizzle client, schema, auth-schema
+│   └── logging/           # Pino structured logging
 ├── features/              # Vertical slices
 │   ├── auth/              # Auth actions & hooks
 │   └── projects/          # Example feature slice
 ├── shared/                # Cross-feature utilities
-│   ├── schemas/           # Pagination, errors
-│   └── utils/             # Date, format helpers
-└── components/            # UI components
-    └── ui/                # shadcn/ui components
+└── proxy.ts               # Next.js 16 proxy (optimistic /dashboard gate)
+scripts/migrate.ts         # Programmatic Drizzle migrator (Railway preDeploy)
+Dockerfile, railway.json   # Build & deploy config
 ```
 
-## Vertical Slice Pattern
+## Deployment (Railway)
 
-Each feature is self-contained:
+1. Create a Railway project and add a **PostgreSQL** service.
+2. Add this repo as a service — Railway auto-detects the root `Dockerfile` (config in `railway.json`).
+3. On the app service, add a Reference Variable `DATABASE_URL=${{Postgres.DATABASE_URL}}` (private
+   networking), plus `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL` (your service's public domain).
+4. Deploy. `preDeployCommand` runs migrations; the `/api/health` healthcheck gates traffic.
 
+Verify the image locally:
+
+```bash
+docker build -t app .
+docker run -p 3000:3000 \
+  -e DATABASE_URL=postgresql://... \
+  -e BETTER_AUTH_SECRET=$(openssl rand -base64 32) \
+  -e BETTER_AUTH_URL=http://localhost:3000 \
+  app
 ```
-src/features/{feature}/
-├── models.ts      # Drizzle types
-├── schemas.ts     # Zod validation
-├── repository.ts  # Database queries
-├── service.ts     # Business logic
-├── errors.ts      # Custom errors
-├── index.ts       # Public API
-└── tests/         # Feature tests
-```
-
-## AI Feedback Loop
-
-The stack is optimized for AI agents to self-correct:
-
-```
-Generate Code → Run Checks → Parse Errors → Fix Code → Repeat
-```
-
-Checks produce machine-readable feedback:
-- TypeScript: Type errors with file:line
-- Biome: Lint errors with suggestions
-- Tests: Failed assertions with expected/actual
-- Logs: Structured JSON with context
 
 ## Environment Variables
 
 ```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+# Database (Railway Postgres — use the reference variable in production)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
 
-# Database (use transaction pooler for serverless)
-DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+# Better Auth
+BETTER_AUTH_SECRET=replace-with-a-long-random-secret   # openssl rand -base64 32
+BETTER_AUTH_URL=http://localhost:3000                  # public domain on Railway
 ```
+
+## AI Workflow Toolkit
+
+Reusable Claude Code orchestration assets live in [`docs/ai-workflow/`](docs/ai-workflow/): a multi-agent
+orchestrator prompt template, an autonomous-owner prompt, a permissions starter (rationale for
+`.claude/settings.json`), and a permissions-audit template.
 
 ## License
 

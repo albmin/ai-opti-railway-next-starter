@@ -1,21 +1,18 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/core/supabase/server";
+import { auth } from "@/core/auth/server";
 
 export interface RegisterState {
   error?: string;
-  success?: boolean;
-  message?: string;
 }
 
 export async function register(
   _prevState: RegisterState,
   formData: FormData,
 ): Promise<RegisterState> {
-  const supabase = await createClient();
-
   const email = formData.get("email");
   const password = formData.get("password");
   const confirmPassword = formData.get("confirmPassword");
@@ -36,27 +33,25 @@ export async function register(
     return { error: "Passwords do not match" };
   }
 
-  if (password.length < 6) {
-    return { error: "Password must be at least 6 characters" };
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters" };
   }
 
-  const { error, data } = await supabase.auth.signUp({
-    email,
-    password,
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  // Check if email confirmation is required
-  if (data.user && !data.session) {
+  try {
+    await auth.api.signUpEmail({
+      body: {
+        email,
+        password,
+        // Better Auth requires a name; derive a sensible default from the email.
+        name: email.split("@")[0] ?? email,
+      },
+      headers: await headers(),
+    });
+  } catch (error) {
     return {
-      success: true,
-      message: "Check your email for a confirmation link.",
+      error: error instanceof Error ? error.message : "Something went wrong. Please try again.",
     };
   }
 
-  // If session exists, user is confirmed (email confirmation disabled)
   redirect("/dashboard");
 }

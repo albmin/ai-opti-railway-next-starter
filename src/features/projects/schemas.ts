@@ -29,7 +29,7 @@ export const ProjectResponseSchema = z.object({
   slug: z.string(),
   description: z.string().nullable(),
   isPublic: z.boolean(),
-  ownerId: z.string().uuid(),
+  ownerId: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

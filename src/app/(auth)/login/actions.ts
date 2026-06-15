@@ -1,16 +1,15 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/core/supabase/server";
+import { auth } from "@/core/auth/server";
 
 export interface LoginState {
   error?: string;
 }
 
 export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
-  const supabase = await createClient();
-
   const email = formData.get("email");
   const password = formData.get("password");
 
@@ -22,13 +21,15 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     return { error: "Email and password are required" };
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    return { error: error.message };
+  try {
+    await auth.api.signInEmail({
+      body: { email, password },
+      headers: await headers(),
+    });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+    };
   }
 
   redirect("/dashboard");

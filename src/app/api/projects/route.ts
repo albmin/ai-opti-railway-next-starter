@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { handleApiError, unauthorizedResponse } from "@/core/api/errors";
+import { auth } from "@/core/auth/server";
 import { getLogger } from "@/core/logging";
-import { createClient } from "@/core/supabase/server";
 import {
   CreateProjectSchema,
   createProject,
@@ -19,14 +19,11 @@ const logger = getLogger("api.projects");
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session) {
       return unauthorizedResponse();
     }
+    const { user } = session;
 
     // Parse pagination from query params
     const searchParams = request.nextUrl.searchParams;
@@ -75,14 +72,11 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session) {
       return unauthorizedResponse();
     }
+    const { user } = session;
 
     const body = await request.json();
     const input = CreateProjectSchema.parse(body);

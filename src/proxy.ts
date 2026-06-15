@@ -1,11 +1,27 @@
-import type { NextRequest } from "next/server";
+import { getSessionCookie } from "better-auth/cookies";
+import { type NextRequest, NextResponse } from "next/server";
 
-import { updateSession } from "@/core/supabase/proxy";
+/**
+ * Next.js 16 proxy (replaces middleware.ts).
+ *
+ * Optimistic auth gate: redirects unauthenticated requests away from protected
+ * routes based on the presence of the Better Auth session cookie. This does NOT
+ * validate the session — the definitive check runs in the route's layout/handler
+ * via `auth.api.getSession`.
+ */
+export function proxy(request: NextRequest) {
+  const sessionCookie = getSessionCookie(request);
 
-export async function proxy(request: NextRequest) {
-  return await updateSession(request);
+  if (!sessionCookie) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // Only run on protected routes; everything else is handled at the page/handler level.
+  matcher: ["/dashboard/:path*"],
 };

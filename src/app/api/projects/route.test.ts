@@ -3,9 +3,11 @@ import { NextRequest } from "next/server";
 
 import type { Project } from "@/features/projects";
 
-// Mock user type
-type MockUser = { id: string; email: string } | null;
-const mockUser: MockUser = { id: "user-123", email: "test@example.com" };
+type SessionResult = {
+  user: { id: string; email: string };
+  session: Record<string, unknown>;
+} | null;
+const mockUser = { id: "user-123", email: "test@example.com" };
 const mockProject: Project = {
   id: "project-123",
   name: "Test Project",
@@ -17,17 +19,12 @@ const mockProject: Project = {
   updatedAt: new Date("2024-01-01"),
 };
 
-// Mock Supabase auth
-const mockGetUser = mock<() => Promise<{ data: { user: MockUser }; error: null }>>(() =>
-  Promise.resolve({ data: { user: mockUser }, error: null }),
+// Mock Better Auth session
+const mockGetSession = mock<() => Promise<SessionResult>>(() =>
+  Promise.resolve({ user: mockUser, session: {} }),
 );
-mock.module("@/core/supabase/server", () => ({
-  createClient: () =>
-    Promise.resolve({
-      auth: {
-        getUser: mockGetUser,
-      },
-    }),
+mock.module("@/core/auth/server", () => ({
+  auth: { api: { getSession: mockGetSession } },
 }));
 
 // Mock repository (the database layer)
@@ -52,7 +49,7 @@ const { GET, POST } = await import("./route");
 
 describe("GET /api/projects", () => {
   beforeEach(() => {
-    mockGetUser.mockClear();
+    mockGetSession.mockClear();
     mockFindByOwnerId.mockClear();
     mockCountByOwnerId.mockClear();
   });
@@ -70,7 +67,7 @@ describe("GET /api/projects", () => {
   });
 
   it("returns 401 for unauthenticated user", async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    mockGetSession.mockResolvedValueOnce(null);
 
     const request = new NextRequest("http://localhost:3000/api/projects");
     const response = await GET(request);
@@ -93,7 +90,7 @@ describe("GET /api/projects", () => {
 
 describe("POST /api/projects", () => {
   beforeEach(() => {
-    mockGetUser.mockClear();
+    mockGetSession.mockClear();
     mockCreate.mockClear();
     mockFindBySlug.mockClear();
   });
@@ -113,7 +110,7 @@ describe("POST /api/projects", () => {
   });
 
   it("returns 401 for unauthenticated user", async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    mockGetSession.mockResolvedValueOnce(null);
 
     const request = new NextRequest("http://localhost:3000/api/projects", {
       method: "POST",
