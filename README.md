@@ -108,9 +108,19 @@ BETTER_AUTH_URL=http://localhost:3000                  # public domain on Railwa
 
 ## AI Workflow Toolkit
 
-Reusable Claude Code orchestration assets live in [`docs/ai-workflow/`](docs/ai-workflow/): a multi-agent
-orchestrator prompt template, an autonomous-owner prompt, a permissions starter (rationale for
-`.claude/settings.json`), and a permissions-audit template.
+This template ships **agentic-workflow** — a strategy-gated, two-tier multi-agent coding workflow —
+pre-installed as a Claude Code skill. Invoke it with `/orchestrate <describe the work>` (a feature, a
+bugfix, a punch-list, or a question); it classifies the work, spawns typed agents, runs an adversarial
+review gate, and for large features integrates parallel worktree slices safely.
+
+- **Live on clone (no setup):** the skill in [`.claude/skills/orchestrate/`](.claude/skills/orchestrate/)
+  and its six typed agents in [`.claude/agents/`](.claude/agents/) (`aw-*.md`).
+- **Docs & portable installer:** [`docs/agentic-workflow/`](docs/agentic-workflow/) — architecture, a
+  usage guide with worked examples, a stack-agnostic permissions starter, and `install.sh` to add the
+  workflow to another project.
+- **Hand-the-reins autonomous mode:** [`docs/agentic-workflow/autonomous-owner-prompt.md`](docs/agentic-workflow/autonomous-owner-prompt.md)
+  — for when you want the agent to set its own roadmap and build it (e.g. to spend leftover session
+  budget productively) rather than hand it a defined task.
 
 ## License
 
