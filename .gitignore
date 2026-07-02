@@ -48,5 +48,8 @@ next-env.d.ts
 
 .agents/reports
 
+# agentic-workflow: runtime decision logs written per /orchestrate run
+.agentic-workflow/
+
 # Stray nested copy of the original repo (not part of this project)
 /ai-opti-nextjs-starter/

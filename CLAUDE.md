@@ -323,10 +323,20 @@ import { z } from "zod/v4";
 
 ## AI Workflow Toolkit
 
-Reusable Claude Code orchestration assets live in `docs/ai-workflow/`:
-- `orchestrator-prompt-template.md` - 5-phase multi-agent wave protocol (pre-flight → infra → dispatch → integrate → deliverables)
-- `autonomous-owner-prompt.md` - autonomous product/engineering owner prompt
-- `permissions-starter.md` - rationale for the committed `.claude/settings.json` allow-list (incl. Docker/Railway)
-- `permissions-audit-template.md` - template for logging permission prompts per phase
+This template ships **agentic-workflow**, a strategy-gated two-tier multi-agent workflow, pre-installed
+as a skill. Invoke with `/orchestrate <describe the work>` — it classifies the work (nature × size),
+takes a light path (shared-context typed agents) or heavy path (parallel worktree slices + integration),
+runs an adversarial `PASS/NEEDS_WORK/BLOCK` review gate, and runs autonomously by default (logs
+assumptions, surfaces blockers at the end; never gates on approval except a destructive-action safety floor).
 
-The committed `.claude/settings.json` is the shared permission baseline for this template.
+- `.claude/skills/orchestrate/` (`SKILL.md` + `references/`) and `.claude/agents/aw-*.md` — the live,
+  installed skill and its six typed agents (`aw-explore/research/analyze/plan/review/execute`).
+- `docs/agentic-workflow/` — source bundle + docs: `docs/architecture.md`, `docs/usage.md` (worked
+  examples), `docs/permissions.md` (stack-agnostic allow-list + the chained-command rule), and
+  `install.sh` (installs the workflow into another project's `.claude/`).
+- `docs/agentic-workflow/autonomous-owner-prompt.md` — the "hand the reins over" prompt: the agent sets
+  its own roadmap and executes it. Use it to spend remaining session budget productively; use
+  `/orchestrate` when the work is already defined.
+
+The committed `.claude/settings.json` is the shared permission baseline for this template; the
+stack-agnostic starter allow-list lives in `docs/agentic-workflow/docs/permissions.md`.
